@@ -212,7 +212,7 @@ export class SnapshotManager {
         ...new Set(snapshotRunners.map((snapshotRunner) => snapshotRunner.runnerId)),
       ]
 
-      const propagateLimit = Math.floor(runners.length / 3) - snapshotRunnersDistinctRunnersIds.length
+      const propagateLimit = Math.ceil(runners.length / 3) - snapshotRunnersDistinctRunnersIds.length
       const unallocatedRunners = runners.filter(
         (runner) => !snapshotRunnersDistinctRunnersIds.some((snapshotRunnerId) => snapshotRunnerId === runner.id),
       )
@@ -702,7 +702,8 @@ export class SnapshotManager {
 
       if (!snapshot.buildInfo) {
         // Snapshots that have gone through the build process are already in the internal registry
-        await this.pushSnapshotToInternalRegistry(snapshot.id)
+        const internalSnapshotName = await this.pushSnapshotToInternalRegistry(snapshot.id)
+        snapshot.internalName = internalSnapshotName
       }
       await this.propagateSnapshotToRunners(snapshot.internalName)
       await this.updateSnapshotState(snapshot.id, SnapshotState.ACTIVE)
@@ -783,7 +784,7 @@ export class SnapshotManager {
     }
   }
 
-  async pushSnapshotToInternalRegistry(snapshotId: string) {
+  async pushSnapshotToInternalRegistry(snapshotId: string): Promise<string> {
     const snapshot = await this.snapshotRepository.findOneOrFail({
       where: {
         id: snapshotId,
@@ -807,6 +808,8 @@ export class SnapshotManager {
 
     // Push the newly tagged snapshot
     await this.dockerProvider.pushImage(internalSnapshotName, registry)
+
+    return internalSnapshotName
   }
 
   async retrySnapshotRunnerPull(snapshotRunner: SnapshotRunner) {

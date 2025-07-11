@@ -23,6 +23,12 @@
       "type": "node-terminal"
     },
     {
+      "command": "yarn serve:skip-proxy-runner",
+      "name": "Debug - Skip Proxy and Runner",
+      "request": "launch",
+      "type": "node-terminal"
+    },
+    {
       "name": "Runner",
       "type": "go",
       "request": "launch",
@@ -51,6 +57,18 @@
       "console": "integratedTerminal",
       "envFile": "${workspaceFolder}/apps/proxy/.env",
       "output": "${workspaceFolder}/dist/apps/proxy"
-    }
+    },
+    {
+      "name": "Launch Dashboard",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/apps/dashboard/src",
+      "sourceMaps": true,
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/apps/dashboard/**",
+        "!**/node_modules/**"
+      ]
+    },
   ]
 }
