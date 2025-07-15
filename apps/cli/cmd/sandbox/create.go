@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/daytonaio/daytona/cli/apiclient"
+	"github.com/daytonaio/apiclient"
+	apiclient_cli "github.com/daytonaio/daytona/cli/apiclient"
 	"github.com/daytonaio/daytona/cli/cmd/common"
 	"github.com/daytonaio/daytona/cli/config"
 	"github.com/daytonaio/daytona/cli/util"
 	views_common "github.com/daytonaio/daytona/cli/views/common"
-	daytonaapiclient "github.com/daytonaio/daytona/daytonaapiclient"
 	"github.com/spf13/cobra"
 )
 
@@ -28,12 +28,12 @@ var CreateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 
-		apiClient, err := apiclient.GetApiClient(nil, nil)
+		apiClient, err := apiclient_cli.GetApiClient(nil, nil)
 		if err != nil {
 			return err
 		}
 
-		createSandbox := daytonaapiclient.NewCreateSandbox()
+		createSandbox := apiclient.NewCreateSandbox()
 
 		// Add non-zero values to the request
 		if snapshotFlag != "" {
@@ -83,12 +83,13 @@ var CreateCmd = &cobra.Command{
 		if diskFlag > 0 {
 			createSandbox.SetDisk(diskFlag)
 		}
-		if autoStopFlag > 0 {
+		if autoStopFlag >= 0 {
 			createSandbox.SetAutoStopInterval(autoStopFlag)
 		}
 		if autoArchiveFlag >= 0 {
 			createSandbox.SetAutoArchiveInterval(autoArchiveFlag)
 		}
+		createSandbox.SetAutoDeleteInterval(autoDeleteFlag)
 
 		if dockerfileFlag != "" {
 			createBuildInfoDto, err := common.GetCreateBuildInfoDto(ctx, dockerfileFlag, contextFlag)
@@ -99,13 +100,13 @@ var CreateCmd = &cobra.Command{
 		}
 
 		if len(volumesFlag) > 0 {
-			volumes := make([]daytonaapiclient.SandboxVolume, 0, len(volumesFlag))
+			volumes := make([]apiclient.SandboxVolume, 0, len(volumesFlag))
 			for _, v := range volumesFlag {
 				parts := strings.SplitN(v, ":", 2)
 				if len(parts) == 2 {
 					volumeId := parts[0]
 					mountPath := parts[1]
-					volume := daytonaapiclient.SandboxVolume{
+					volume := apiclient.SandboxVolume{
 						VolumeId:  volumeId,
 						MountPath: mountPath,
 					}
@@ -117,14 +118,14 @@ var CreateCmd = &cobra.Command{
 			}
 		}
 
-		var sandbox *daytonaapiclient.Sandbox
+		var sandbox *apiclient.Sandbox
 
 		sandbox, res, err := apiClient.SandboxAPI.CreateSandbox(ctx).CreateSandbox(*createSandbox).Execute()
 		if err != nil {
-			return apiclient.HandleErrorResponse(res, err)
+			return apiclient_cli.HandleErrorResponse(res, err)
 		}
 
-		if sandbox.State != nil && *sandbox.State == daytonaapiclient.SANDBOXSTATE_PENDING_BUILD {
+		if sandbox.State != nil && *sandbox.State == apiclient.SANDBOXSTATE_PENDING_BUILD {
 			c, err := config.GetConfig()
 			if err != nil {
 				return err
@@ -135,7 +136,7 @@ var CreateCmd = &cobra.Command{
 				return err
 			}
 
-			err = common.AwaitSandboxState(ctx, apiClient, sandbox.Id, daytonaapiclient.SANDBOXSTATE_BUILDING_SNAPSHOT)
+			err = common.AwaitSandboxState(ctx, apiClient, sandbox.Id, apiclient.SANDBOXSTATE_BUILDING_SNAPSHOT)
 			if err != nil {
 				return err
 			}
@@ -152,7 +153,7 @@ var CreateCmd = &cobra.Command{
 				ResourceType:         common.ResourceTypeSandbox,
 			})
 
-			err = common.AwaitSandboxState(ctx, apiClient, sandbox.Id, daytonaapiclient.SANDBOXSTATE_STARTED)
+			err = common.AwaitSandboxState(ctx, apiClient, sandbox.Id, apiclient.SANDBOXSTATE_STARTED)
 			if err != nil {
 				return err
 			}
@@ -168,7 +169,7 @@ var CreateCmd = &cobra.Command{
 			var getSandboxErr error
 			sandbox, res, getSandboxErr = apiClient.SandboxAPI.GetSandbox(ctx, sandbox.Id).Execute()
 			if getSandboxErr != nil {
-				return apiclient.HandleErrorResponse(res, getSandboxErr)
+				return apiclient_cli.HandleErrorResponse(res, getSandboxErr)
 			}
 			runnerDomain = sandbox.RunnerDomain
 		}
@@ -198,6 +199,7 @@ var (
 	diskFlag        int32
 	autoStopFlag    int32
 	autoArchiveFlag int32
+	autoDeleteFlag  int32
 	volumesFlag     []string
 	dockerfileFlag  string
 	contextFlag     []string
@@ -215,8 +217,9 @@ func init() {
 	CreateCmd.Flags().Int32Var(&gpuFlag, "gpu", 0, "GPU units allocated to the sandbox")
 	CreateCmd.Flags().Int32Var(&memoryFlag, "memory", 0, "Memory allocated to the sandbox in MB")
 	CreateCmd.Flags().Int32Var(&diskFlag, "disk", 0, "Disk space allocated to the sandbox in GB")
-	CreateCmd.Flags().Int32Var(&autoStopFlag, "auto-stop", 0, "Auto-stop interval in minutes (0 means disabled)")
+	CreateCmd.Flags().Int32Var(&autoStopFlag, "auto-stop", 15, "Auto-stop interval in minutes (0 means disabled)")
 	CreateCmd.Flags().Int32Var(&autoArchiveFlag, "auto-archive", 10080, "Auto-archive interval in minutes (0 means the maximum interval will be used)")
+	CreateCmd.Flags().Int32Var(&autoDeleteFlag, "auto-delete", -1, "Auto-delete interval in minutes (negative value means disabled, 0 means delete immediately upon stopping)")
 	CreateCmd.Flags().StringArrayVarP(&volumesFlag, "volume", "v", []string{}, "Volumes to mount (format: VOLUME_NAME:MOUNT_PATH)")
 	CreateCmd.Flags().StringVarP(&dockerfileFlag, "dockerfile", "f", "", "Path to Dockerfile for Sandbox snapshot")
 	CreateCmd.Flags().StringArrayVarP(&contextFlag, "context", "c", []string{}, "Files or directories to include in the build context (can be specified multiple times)")

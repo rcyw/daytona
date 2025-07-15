@@ -12,7 +12,6 @@ import {
   SandboxVolume,
   BuildInfo,
   SandboxBackupStateEnum,
-  SandboxLabels,
 } from '@daytonaio/api-client'
 import { FileSystem } from './FileSystem'
 import { Git } from './Git'
@@ -20,6 +19,7 @@ import { CodeRunParams, Process } from './Process'
 import { LspLanguageId, LspServer } from './LspServer'
 import { DaytonaError } from './errors/DaytonaError'
 import { prefixRelativePath } from './utils/Path'
+import { ComputerUse } from './ComputerUse'
 
 /**
  * Interface defining methods that a code toolbox must implement
@@ -36,6 +36,7 @@ export interface SandboxCodeToolbox {
  * @property {FileSystem} fs - File system operations interface
  * @property {Git} git - Git operations interface
  * @property {Process} process - Process execution interface
+ * @property {ComputerUse} computerUse - Computer use operations interface for desktop automation
  * @property {string} id - Unique identifier for the Sandbox
  * @property {string} organizationId - Organization ID of the Sandbox
  * @property {string} [snapshot] - Daytona snapshot used to create the Sandbox
@@ -54,6 +55,7 @@ export interface SandboxCodeToolbox {
  * @property {string} [backupCreatedAt] - When the backup was created
  * @property {number} [autoStopInterval] - Auto-stop interval in minutes
  * @property {number} [autoArchiveInterval] - Auto-archive interval in minutes
+ * @property {number} [autoDeleteInterval] - Auto-delete interval in minutes
  * @property {string} [runnerDomain] - Domain name of the Sandbox runner
  * @property {Array<SandboxVolume>} [volumes] - Volumes attached to the Sandbox
  * @property {BuildInfo} [buildInfo] - Build information for the Sandbox if it was created from dynamic build
@@ -66,6 +68,7 @@ export class Sandbox implements SandboxDto {
   public readonly fs: FileSystem
   public readonly git: Git
   public readonly process: Process
+  public readonly computerUse: ComputerUse
 
   public id!: string
   public organizationId!: string
@@ -85,6 +88,7 @@ export class Sandbox implements SandboxDto {
   public backupCreatedAt?: string
   public autoStopInterval?: number
   public autoArchiveInterval?: number
+  public autoDeleteInterval?: number
   public runnerDomain?: string
   public volumes?: Array<SandboxVolume>
   public buildInfo?: BuildInfo
@@ -112,6 +116,7 @@ export class Sandbox implements SandboxDto {
     this.fs = new FileSystem(this.id, this.toolboxApi, async () => await this.getRootDir())
     this.git = new Git(this.id, this.toolboxApi, async () => await this.getRootDir())
     this.process = new Process(this.id, this.codeToolbox, this.toolboxApi, async () => await this.getRootDir())
+    this.computerUse = new ComputerUse(this.id, this.toolboxApi)
   }
 
   /**
@@ -380,6 +385,29 @@ export class Sandbox implements SandboxDto {
   }
 
   /**
+   * Set the auto-delete interval for the Sandbox.
+   *
+   * The Sandbox will automatically delete after being continuously stopped for the specified interval.
+   *
+   * @param {number} interval - Number of minutes after which a continuously stopped Sandbox will be auto-deleted.
+   *                           Set to negative value to disable auto-delete. Set to 0 to delete immediately upon stopping.
+   *                           By default, auto-delete is disabled.
+   * @returns {Promise<void>}
+   *
+   * @example
+   * // Auto-delete after 1 hour
+   * await sandbox.setAutoDeleteInterval(60);
+   * // Or delete immediately upon stopping
+   * await sandbox.setAutoDeleteInterval(0);
+   * // Or disable auto-delete
+   * await sandbox.setAutoDeleteInterval(-1);
+   */
+  public async setAutoDeleteInterval(interval: number): Promise<void> {
+    await this.sandboxApi.setAutoDeleteInterval(this.id, interval)
+    this.autoDeleteInterval = interval
+  }
+
+  /**
    * Retrieves the preview link for the sandbox at the specified port. If the port is closed,
    * it will be opened automatically. For private sandboxes, a token is included to grant access
    * to the URL.
@@ -440,6 +468,7 @@ export class Sandbox implements SandboxDto {
     this.backupCreatedAt = sandboxDto.backupCreatedAt
     this.autoStopInterval = sandboxDto.autoStopInterval
     this.autoArchiveInterval = sandboxDto.autoArchiveInterval
+    this.autoDeleteInterval = sandboxDto.autoDeleteInterval
     this.runnerDomain = sandboxDto.runnerDomain
     this.volumes = sandboxDto.volumes
     this.buildInfo = sandboxDto.buildInfo

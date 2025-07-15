@@ -125,6 +125,8 @@ export interface Resources {
  * @property {boolean} [public] - Is the Sandbox port preview public
  * @property {number} [autoStopInterval] - Auto-stop interval in minutes (0 means disabled). Default is 15 minutes.
  * @property {number} [autoArchiveInterval] - Auto-archive interval in minutes (0 means the maximum interval will be used). Default is 7 days.
+ * @property {number} [autoDeleteInterval] - Auto-delete interval in minutes (negative value means disabled, 0 means delete immediately upon stopping). By default, auto-delete is disabled.
+ * @property {VolumeMount[]} [volumes] - Optional array of volumes to mount to the Sandbox
  */
 export type CreateSandboxBaseParams = {
   user?: string
@@ -134,6 +136,7 @@ export type CreateSandboxBaseParams = {
   public?: boolean
   autoStopInterval?: number
   autoArchiveInterval?: number
+  autoDeleteInterval?: number
   volumes?: VolumeMount[]
 }
 
@@ -327,7 +330,9 @@ export class Daytona {
    *         NODE_ENV: 'development',
    *         DEBUG: 'true'
    *     },
-   *     autoStopInterval: 60
+   *     autoStopInterval: 60,
+   *     autoArchiveInterval: 60,
+   *     autoDeleteInterval: 120
    * };
    * const sandbox = await daytona.create(params, { timeout: 100 });
    */
@@ -360,7 +365,9 @@ export class Daytona {
    *         cpu: 2,
    *         memory: 4 // 4GB RAM
    *     },
-   *     autoStopInterval: 60
+   *     autoStopInterval: 60,
+   *     autoArchiveInterval: 60,
+   *     autoDeleteInterval: 120
    * };
    * const sandbox = await daytona.create(params, { timeout: 100, onSnapshotCreateLogs: console.log });
    */
@@ -450,6 +457,7 @@ export class Daytona {
           disk: resources?.disk,
           autoStopInterval: params.autoStopInterval,
           autoArchiveInterval: params.autoArchiveInterval,
+          autoDeleteInterval: params.autoDeleteInterval,
           volumes: params.volumes,
         },
         undefined,

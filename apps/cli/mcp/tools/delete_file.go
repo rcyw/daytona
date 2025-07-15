@@ -7,8 +7,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/daytonaio/daytona/cli/apiclient"
-	daytonaapiclient "github.com/daytonaio/daytona/daytonaapiclient"
+	"github.com/daytonaio/apiclient"
+	apiclient_cli "github.com/daytonaio/daytona/cli/apiclient"
 	"github.com/mark3labs/mcp-go/mcp"
 
 	log "github.com/sirupsen/logrus"
@@ -16,19 +16,19 @@ import (
 
 type DeleteFileArgs struct {
 	Id       *string `json:"id,omitempty"`
-	FilePath *string `json:"file_path,omitempty"`
+	FilePath *string `json:"filePath,omitempty"`
 }
 
 func GetDeleteFileTool() mcp.Tool {
 	return mcp.NewTool("delete_file",
 		mcp.WithDescription("Delete a file or directory in the Daytona sandbox."),
-		mcp.WithString("file_path", mcp.Required(), mcp.Description("Path to the file or directory to delete.")),
+		mcp.WithString("filePath", mcp.Required(), mcp.Description("Path to the file or directory to delete.")),
 		mcp.WithString("id", mcp.Required(), mcp.Description("ID of the sandbox to delete the file in.")),
 	)
 }
 
 func DeleteFile(ctx context.Context, request mcp.CallToolRequest, args DeleteFileArgs) (*mcp.CallToolResult, error) {
-	apiClient, err := apiclient.GetApiClient(nil, daytonaMCPHeaders)
+	apiClient, err := apiclient_cli.GetApiClient(nil, daytonaMCPHeaders)
 	if err != nil {
 		return &mcp.CallToolResult{IsError: true}, err
 	}
@@ -38,12 +38,12 @@ func DeleteFile(ctx context.Context, request mcp.CallToolRequest, args DeleteFil
 	}
 
 	if args.FilePath == nil || *args.FilePath == "" {
-		return &mcp.CallToolResult{IsError: true}, fmt.Errorf("file_path parameter is required")
+		return &mcp.CallToolResult{IsError: true}, fmt.Errorf("filePath parameter is required")
 	}
 
 	// Execute delete command
 	execResponse, _, err := apiClient.ToolboxAPI.ExecuteCommand(ctx, *args.Id).
-		ExecuteRequest(*daytonaapiclient.NewExecuteRequest(fmt.Sprintf("rm -rf %s", *args.FilePath))).
+		ExecuteRequest(*apiclient.NewExecuteRequest(fmt.Sprintf("rm -rf %s", *args.FilePath))).
 		Execute()
 	if err != nil {
 		return &mcp.CallToolResult{IsError: true}, fmt.Errorf("error deleting file: %v", err)

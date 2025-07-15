@@ -18,6 +18,7 @@ from .._utils.path import prefix_relative_path
 from .._utils.timeout import with_timeout
 from ..common.errors import DaytonaError
 from ..common.protocols import SandboxCodeToolbox
+from .computer_use import ComputerUse
 from .filesystem import FileSystem
 from .git import Git
 from .lsp_server import LspLanguageId, LspServer
@@ -31,6 +32,7 @@ class Sandbox(SandboxDto):
         fs (FileSystem): File system operations interface.
         git (Git): Git operations interface.
         process (Process): Process execution interface.
+        computer_use (ComputerUse): Computer use operations interface for desktop automation.
         id (str): Unique identifier for the Sandbox.
         organization_id (str): Organization ID of the Sandbox.
         snapshot (str): Daytona snapshot used to create the Sandbox.
@@ -49,6 +51,7 @@ class Sandbox(SandboxDto):
         backup_created_at (str): When the backup was created.
         auto_stop_interval (int): Auto-stop interval in minutes.
         auto_archive_interval (int): Auto-archive interval in minutes.
+        auto_delete_interval (int): Auto-delete interval in minutes.
         runner_domain (str): Domain name of the Sandbox runner.
         volumes (List[str]): Volumes attached to the Sandbox.
         build_info (str): Build information for the Sandbox if it was created from dynamic build.
@@ -59,6 +62,7 @@ class Sandbox(SandboxDto):
     _fs: FileSystem = PrivateAttr()
     _git: Git = PrivateAttr()
     _process: Process = PrivateAttr()
+    _computer_use: ComputerUse = PrivateAttr()
 
     # TODO: Remove model_config once everything is migrated to pydantic # pylint: disable=fixme
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -89,6 +93,7 @@ class Sandbox(SandboxDto):
         self._fs = FileSystem(self.id, toolbox_api, self.__get_root_dir)
         self._git = Git(self.id, toolbox_api, self.__get_root_dir)
         self._process = Process(self.id, code_toolbox, toolbox_api, self.__get_root_dir)
+        self._computer_use = ComputerUse(self.id, toolbox_api)
 
     @property
     def fs(self) -> FileSystem:
@@ -101,6 +106,10 @@ class Sandbox(SandboxDto):
     @property
     def process(self) -> Process:
         return self._process
+
+    @property
+    def computer_use(self) -> ComputerUse:
+        return self._computer_use
 
     def refresh_data(self) -> None:
         """Refreshes the Sandbox data from the API.
@@ -363,15 +372,39 @@ class Sandbox(SandboxDto):
         Example:
             ```python
             # Auto-archive after 1 hour
-            sandbox.set_autoarchive_interval(60)
+            sandbox.set_auto_archive_interval(60)
             # Or use the maximum interval
-            sandbox.set_autoarchive_interval(0)
+            sandbox.set_auto_archive_interval(0)
             ```
         """
         if not isinstance(interval, int) or interval < 0:
             raise DaytonaError("Auto-archive interval must be a non-negative integer")
         self._sandbox_api.set_auto_archive_interval(self.id, interval)
         self.auto_archive_interval = interval
+
+    @intercept_errors(message_prefix="Failed to set auto-delete interval: ")
+    def set_auto_delete_interval(self, interval: int) -> None:
+        """Sets the auto-delete interval for the Sandbox.
+
+        The Sandbox will automatically delete after being continuously stopped for the specified interval.
+
+        Args:
+            interval (int): Number of minutes after which a continuously stopped Sandbox will be auto-deleted.
+                Set to negative value to disable auto-delete. Set to 0 to delete immediately upon stopping.
+                By default, auto-delete is disabled.
+
+        Example:
+            ```python
+            # Auto-delete after 1 hour
+            sandbox.set_auto_delete_interval(60)
+            # Or delete immediately upon stopping
+            sandbox.set_auto_delete_interval(0)
+            # Or disable auto-delete
+            sandbox.set_auto_delete_interval(-1)
+            ```
+        """
+        self._sandbox_api.set_auto_delete_interval(self.id, interval)
+        self.auto_delete_interval = interval
 
     @intercept_errors(message_prefix="Failed to get preview link: ")
     def get_preview_link(self, port: int) -> PortPreviewUrl:
@@ -430,6 +463,7 @@ class Sandbox(SandboxDto):
         self.backup_created_at = sandbox_dto.backup_created_at
         self.auto_stop_interval = sandbox_dto.auto_stop_interval
         self.auto_archive_interval = sandbox_dto.auto_archive_interval
+        self.auto_delete_interval = sandbox_dto.auto_delete_interval
         self.runner_domain = sandbox_dto.runner_domain
         self.volumes = sandbox_dto.volumes
         self.build_info = sandbox_dto.build_info
