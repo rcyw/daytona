@@ -27,7 +27,7 @@
       "configurations": {
         "production": {}
       },
-      "dependsOn": ["build-darwin-arm64"]
+      "dependsOn": ["build-amd64"]
     },
     "build-amd64": {
       "executor": "@nx-go/nx-go:build",
@@ -37,19 +37,6 @@
         "env": {
           "GOARCH": "amd64",
           "GOOS": "linux"
-        },
-        "flags": ["-ldflags \"-X 'github.com/daytonaio/daemon/internal.Version=${npm_package_version}'\""]
-      },
-      "dependsOn": ["prepare"]
-    },
-    "build-darwin-arm64": {
-      "executor": "@nx-go/nx-go:build",
-      "options": {
-        "main": "{projectRoot}/cmd/daemon/main.go",
-        "outputPath": "dist/apps/daemon-darwin-arm64",
-        "env": {
-          "GOARCH": "arm64",
-          "GOOS": "darwin"
         },
         "flags": ["-ldflags \"-X 'github.com/daytonaio/daemon/internal.Version=${npm_package_version}'\""]
       },
