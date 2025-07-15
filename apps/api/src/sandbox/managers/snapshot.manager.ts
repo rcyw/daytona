@@ -798,7 +798,7 @@ export class SnapshotManager {
 
     //  get tag from snapshot name
     const tag = snapshot.imageName.split(':')[1]
-    const internalSnapshotName = `${registry.url}/${registry.project}/${snapshot.id}:${tag}`
+    const internalSnapshotName = `${registry.url.replace(/^(https?:\/\/)/, '')}/${registry.project}/${snapshot.id}:${tag}`
 
     snapshot.internalName = internalSnapshotName
     await this.snapshotRepository.save(snapshot)
