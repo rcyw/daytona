@@ -5,6 +5,7 @@ use (
 	./apps/daemon
 	./apps/proxy
 	./apps/runner
+	./deep-docs/hashicorp-go-plugin-example
 	./libs/api-client-go
 	./libs/common-go
 	./libs/computer-use

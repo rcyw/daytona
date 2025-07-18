@@ -1,0 +1,11 @@
+# Daytona Computer Use Demo Environment Variables
+export DISPLAY=:1
+export VNC_RESOLUTION=1280x720
+export PATH="/usr/local/bin:$PATH"
+
+# Screen locking is enabled by default
+# To disable screen locking, uncomment the following lines:
+# if command -v xfconf-query >/dev/null 2>&1; then
+#     xfconf-query -c xfce4-screensaver -p /saver/enabled -n -t bool -s false 2>/dev/null || true
+#     xfconf-query -c xfce4-screensaver -p /lock/enabled -n -t bool -s false 2>/dev/null || true
+# fi 

@@ -1,0 +1,26 @@
+# Exclude unnecessary files from build context
+README.md
+*.md
+!docs/
+shared/
+logs/
+
+# Exclude version control
+.git/
+.gitignore
+
+# Exclude build artifacts
+# dist/
+# Note: dist/ is included when daemon binary exists
+.tmp/
+*.log
+
+# Exclude IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Exclude OS files
+.DS_Store
+Thumbs.db 
