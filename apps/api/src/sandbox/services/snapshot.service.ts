@@ -9,9 +9,10 @@ import {
   ConflictException,
   ForbiddenException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { Repository, Not, In, IsNull, Raw, Like, JsonContains } from 'typeorm'
 import { Snapshot } from '../entities/snapshot.entity'
 import { SnapshotState } from '../enums/snapshot-state.enum'
 import { CreateSnapshotDto } from '../dto/create-snapshot.dto'
@@ -23,11 +24,20 @@ import { SandboxCreatedEvent } from '../events/sandbox-create.event'
 import { Organization } from '../../organization/entities/organization.entity'
 import { OrganizationService } from '../../organization/services/organization.service'
 import { SnapshotRunner } from '../entities/snapshot-runner.entity'
+import { Sandbox } from '../entities/sandbox.entity'
+import { SandboxState } from '../enums/sandbox-state.enum'
+import { OrganizationEvents } from '../../organization/constants/organization-events.constant'
+import { OrganizationSuspendedSnapshotDeactivatedEvent } from '../../organization/events/organization-suspended-snapshot-deactivated.event'
+import { SnapshotRunnerState } from '../enums/snapshot-runner-state.enum'
 
-const IMAGE_NAME_REGEX = /^[a-zA-Z0-9.\-:]+(\/[a-zA-Z0-9.\-:]+)*$/
+const IMAGE_NAME_REGEX = /^[a-zA-Z0-9_.\-:]+(\/[a-zA-Z0-9_.\-:]+)*$/
 @Injectable()
 export class SnapshotService {
+  private readonly logger = new Logger(SnapshotService.name)
+
   constructor(
+    @InjectRepository(Sandbox)
+    private readonly sandboxRepository: Repository<Sandbox>,
     @InjectRepository(Snapshot)
     private readonly snapshotRepository: Repository<Snapshot>,
     @InjectRepository(BuildInfo)
@@ -289,5 +299,74 @@ export class SnapshotService {
     snapshot.state = SnapshotState.ACTIVE
     snapshot.lastUsedAt = new Date()
     return await this.snapshotRepository.save(snapshot)
+  }
+
+  async canCleanupImage(imageName: string): Promise<boolean> {
+    const snapshot = await this.snapshotRepository.findOne({
+      where: {
+        state: Not(In([SnapshotState.ERROR, SnapshotState.BUILD_FAILED])),
+        internalName: imageName,
+      },
+    })
+
+    if (snapshot) {
+      return false
+    }
+
+    const sandbox = await this.sandboxRepository.findOne({
+      where: [
+        {
+          existingBackupSnapshots: Raw((alias) => `${alias} @> '[{"snapshotName":"${imageName}"}]'::jsonb`),
+        },
+        {
+          existingBackupSnapshots: Raw((alias) => `${alias} @> '[{"imageName":"${imageName}"}]'::jsonb`),
+        },
+        {
+          backupSnapshot: imageName,
+        },
+      ],
+    })
+
+    if (sandbox && sandbox.state !== SandboxState.DESTROYED) {
+      return false
+    }
+
+    return true
+  }
+
+  async deactivateSnapshot(snapshotId: string): Promise<void> {
+    const snapshot = await this.snapshotRepository.findOne({
+      where: { id: snapshotId },
+    })
+
+    if (!snapshot) {
+      throw new NotFoundException(`Snapshot ${snapshotId} not found`)
+    }
+
+    if (snapshot.state === SnapshotState.INACTIVE) {
+      return
+    }
+
+    snapshot.state = SnapshotState.INACTIVE
+    await this.snapshotRepository.save(snapshot)
+
+    // Set associated SnapshotRunner records to REMOVING state
+    const result = await this.snapshotRunnerRepository.update(
+      { snapshotRef: snapshot.internalName },
+      { state: SnapshotRunnerState.REMOVING },
+    )
+
+    this.logger.debug(`Deactivated snapshot ${snapshot.id} and marked ${result.affected} SnapshotRunners for removal`)
+  }
+
+  @OnEvent(OrganizationEvents.SUSPENDED_SNAPSHOT_DEACTIVATED)
+  async handleSuspendedOrganizationSnapshotDeactivated(event: OrganizationSuspendedSnapshotDeactivatedEvent) {
+    await this.deactivateSnapshot(event.snapshotId).catch((error) => {
+      //  log the error for now, but don't throw it as it will be retried
+      this.logger.error(
+        `Error deactivating snapshot from suspended organization. SnapshotId: ${event.snapshotId}: `,
+        error,
+      )
+    })
   }
 }

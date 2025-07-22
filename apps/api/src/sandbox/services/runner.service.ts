@@ -6,11 +6,10 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Cron } from '@nestjs/schedule'
-import { FindOptionsWhere, In, Not, Raw, Repository } from 'typeorm'
+import { FindOptionsWhere, In, Like, Not, Raw, Repository } from 'typeorm'
 import { Runner } from '../entities/runner.entity'
 import { CreateRunnerDto } from '../dto/create-runner.dto'
 import { SandboxClass } from '../enums/sandbox-class.enum'
-import { RunnerRegion } from '../enums/runner-region.enum'
 import { RunnerApiFactory } from '../runner-api/runnerApi'
 import { RunnerState } from '../enums/runner-state.enum'
 import { BadRequestError } from '../../exceptions/bad-request.exception'
@@ -43,7 +42,7 @@ export class RunnerService {
 
   async create(createRunnerDto: CreateRunnerDto): Promise<Runner> {
     // Validate region and class
-    if (!this.isValidRegion(createRunnerDto.region)) {
+    if (createRunnerDto.region.trim().length === 0) {
       throw new Error('Invalid region')
     }
     if (!this.isValidClass(createRunnerDto.class)) {
@@ -73,6 +72,16 @@ export class RunnerService {
 
   async findOne(id: string): Promise<Runner | null> {
     return this.runnerRepository.findOneBy({ id })
+  }
+
+  async findByIds(runnerIds: string[]): Promise<Runner[]> {
+    if (runnerIds.length === 0) {
+      return []
+    }
+
+    return this.runnerRepository.find({
+      where: { id: In(runnerIds) },
+    })
   }
 
   async findBySandboxId(sandboxId: string): Promise<Runner | null> {
@@ -215,10 +224,6 @@ export class RunnerService {
     await this.runnerRepository.save(runner)
   }
 
-  private isValidRegion(region: RunnerRegion): boolean {
-    return Object.values(RunnerRegion).includes(region)
-  }
-
   private isValidClass(sandboxClass: SandboxClass): boolean {
     return Object.values(SandboxClass).includes(sandboxClass)
   }
@@ -350,7 +355,7 @@ export class RunnerService {
 }
 
 export class GetRunnerParams {
-  region?: RunnerRegion
+  region?: string
   sandboxClass?: SandboxClass
   snapshotRef?: string
   excludedRunnerIds?: string[]
