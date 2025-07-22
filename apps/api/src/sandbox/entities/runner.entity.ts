@@ -4,7 +4,6 @@
  */
 
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
-import { RunnerRegion } from '../enums/runner-region.enum'
 import { SandboxClass } from '../enums/sandbox-class.enum'
 import { RunnerState } from '../enums/runner-state.enum'
 
@@ -52,11 +51,8 @@ export class Runner {
   @Column()
   capacity: number
 
-  @Column({
-    type: 'enum',
-    enum: RunnerRegion,
-  })
-  region: RunnerRegion
+  @Column()
+  region: string
 
   @Column({
     type: 'enum',
@@ -67,6 +63,7 @@ export class Runner {
 
   @Column({
     nullable: true,
+    type: 'timestamp with time zone',
   })
   lastChecked: Date
 
@@ -75,9 +72,13 @@ export class Runner {
   })
   unschedulable: boolean
 
-  @CreateDateColumn()
+  @CreateDateColumn({
+    type: 'timestamp with time zone',
+  })
   createdAt: Date
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({
+    type: 'timestamp with time zone',
+  })
   updatedAt: Date
 }
