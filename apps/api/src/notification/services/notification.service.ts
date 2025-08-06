@@ -16,13 +16,16 @@ import { SnapshotEvents } from '../../sandbox/constants/snapshot-events'
 import { SnapshotDto } from '../../sandbox/dto/snapshot.dto'
 import { SnapshotStateUpdatedEvent } from '../../sandbox/events/snapshot-state-updated.event'
 import { SnapshotRemovedEvent } from '../../sandbox/events/snapshot-removed.event'
-import { SnapshotEnabledToggledEvent } from '../../sandbox/events/snapshot-enabled-toggled.event'
 import { VolumeEvents } from '../../sandbox/constants/volume-events'
 import { VolumeCreatedEvent } from '../../sandbox/events/volume-created.event'
 import { VolumeDto } from '../../sandbox/dto/volume.dto'
 import { VolumeStateUpdatedEvent } from '../../sandbox/events/volume-state-updated.event'
 import { VolumeLastUsedAtUpdatedEvent } from '../../sandbox/events/volume-last-used-at-updated.event'
 import { SandboxDesiredStateUpdatedEvent } from '../../sandbox/events/sandbox-desired-state-updated.event'
+import { AuditLogEvents } from '../../audit/constants/audit-log-events.constant'
+import { AuditLogDto } from '../../audit/dto/audit-log.dto'
+import { AuditLogCreatedEvent } from '../../audit/events/audit-log-created.event'
+import { AuditLogUpdatedEvent } from '../../audit/events/audit-log-updated.event'
 
 @Injectable()
 export class NotificationService {
@@ -64,12 +67,6 @@ export class NotificationService {
     this.notificationGateway.emitSnapshotStateUpdated(dto, event.oldState, event.newState)
   }
 
-  @OnEvent(SnapshotEvents.ENABLED_TOGGLED)
-  async handleSnapshotEnabledToggled(event: SnapshotEnabledToggledEvent) {
-    const dto = SnapshotDto.fromSnapshot(event.snapshot)
-    this.notificationGateway.emitSnapshotEnabledToggled(dto)
-  }
-
   @OnEvent(SnapshotEvents.REMOVED)
   async handleSnapshotRemoved(event: SnapshotRemovedEvent) {
     const dto = SnapshotDto.fromSnapshot(event.snapshot)
@@ -92,5 +89,17 @@ export class NotificationService {
   async handleVolumeLastUsedAtUpdated(event: VolumeLastUsedAtUpdatedEvent) {
     const dto = VolumeDto.fromVolume(event.volume)
     this.notificationGateway.emitVolumeLastUsedAtUpdated(dto)
+  }
+
+  @OnEvent(AuditLogEvents.CREATED)
+  async handleAuditLogCreated(event: AuditLogCreatedEvent) {
+    const dto = AuditLogDto.fromAuditLog(event.auditLog)
+    this.notificationGateway.emitAuditLogCreated(dto)
+  }
+
+  @OnEvent(AuditLogEvents.UPDATED)
+  async handleAuditLogUpdated(event: AuditLogUpdatedEvent) {
+    const dto = AuditLogDto.fromAuditLog(event.auditLog)
+    this.notificationGateway.emitAuditLogUpdated(dto)
   }
 }

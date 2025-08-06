@@ -29,17 +29,19 @@ class CreateRunner(BaseModel):
     """ # noqa: E501
     domain: StrictStr
     api_url: StrictStr = Field(alias="apiUrl")
+    proxy_url: StrictStr = Field(alias="proxyUrl")
     api_key: StrictStr = Field(alias="apiKey")
     cpu: Union[StrictFloat, StrictInt]
-    memory: Union[StrictFloat, StrictInt]
-    disk: Union[StrictFloat, StrictInt]
+    memory_gi_b: Union[StrictFloat, StrictInt] = Field(alias="memoryGiB")
+    disk_gi_b: Union[StrictFloat, StrictInt] = Field(alias="diskGiB")
     gpu: Union[StrictFloat, StrictInt]
     gpu_type: StrictStr = Field(alias="gpuType")
     var_class: StrictStr = Field(alias="class")
     capacity: Union[StrictFloat, StrictInt]
     region: StrictStr
+    version: StrictStr
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["domain", "apiUrl", "apiKey", "cpu", "memory", "disk", "gpu", "gpuType", "class", "capacity", "region"]
+    __properties: ClassVar[List[str]] = ["domain", "apiUrl", "proxyUrl", "apiKey", "cpu", "memoryGiB", "diskGiB", "gpu", "gpuType", "class", "capacity", "region", "version"]
 
     @field_validator('var_class')
     def var_class_validate_enum(cls, value):
@@ -108,15 +110,17 @@ class CreateRunner(BaseModel):
         _obj = cls.model_validate({
             "domain": obj.get("domain"),
             "apiUrl": obj.get("apiUrl"),
+            "proxyUrl": obj.get("proxyUrl"),
             "apiKey": obj.get("apiKey"),
             "cpu": obj.get("cpu"),
-            "memory": obj.get("memory"),
-            "disk": obj.get("disk"),
+            "memoryGiB": obj.get("memoryGiB"),
+            "diskGiB": obj.get("diskGiB"),
             "gpu": obj.get("gpu"),
             "gpuType": obj.get("gpuType"),
             "class": obj.get("class"),
             "capacity": obj.get("capacity"),
-            "region": obj.get("region")
+            "region": obj.get("region"),
+            "version": obj.get("version")
         })
         # store additional fields in additional_properties
         for _key in obj.keys():

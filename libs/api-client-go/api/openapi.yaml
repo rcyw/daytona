@@ -496,6 +496,34 @@ paths:
       summary: Unsuspend organization
       tags:
         - organizations
+  /organizations/by-sandbox-id/{sandboxId}:
+    get:
+      operationId: getOrganizationBySandboxId
+      parameters:
+        - description: Sandbox ID
+          explode: false
+          in: path
+          name: sandboxId
+          required: true
+          schema:
+            type: string
+          style: simple
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+          description: Organization
+      security:
+        - bearer: []
+        - oauth2:
+            - openid
+            - profile
+            - email
+      summary: Get organization by sandbox ID
+      tags:
+        - organizations
   /organizations/{organizationId}/roles:
     get:
       operationId: listOrganizationRoles
@@ -1069,6 +1097,26 @@ paths:
       summary: Unlink account
       tags:
         - users
+  /users/mfa/sms/enroll:
+    post:
+      operationId: enrollInSmsMfa
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+          description: SMS MFA enrollment URL
+      security:
+        - bearer: []
+        - oauth2:
+            - openid
+            - profile
+            - email
+      summary: Enroll in SMS MFA
+      tags:
+        - users
   /users/{id}:
     get:
       operationId: getUser
@@ -1292,7 +1340,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Sandbox'
-          description: Sandbox has been started
+          description: Sandbox has been started or is being restored from archived
+            state
       security:
         - bearer: []
         - oauth2:
@@ -1776,14 +1825,14 @@ paths:
       summary: Get runner by sandbox ID
       tags:
         - runners
-  /runners/by-snapshot:
+  /runners/by-snapshot-ref:
     get:
-      operationId: getRunnersBySnapshotInternalName
+      operationId: getRunnersBySnapshotRef
       parameters:
-        - description: Internal name of the snapshot
+        - description: Snapshot ref
           explode: true
           in: query
-          name: internalName
+          name: ref
           required: true
           schema:
             type: string
@@ -1803,7 +1852,7 @@ paths:
             - openid
             - profile
             - email
-      summary: Get runners by snapshot internal name
+      summary: Get runners by snapshot ref
       tags:
         - runners
   /toolbox/{sandboxId}/toolbox/project-dir:
@@ -4631,48 +4680,6 @@ paths:
       summary: Get snapshot by ID or name
       tags:
         - snapshots
-  /snapshots/{id}/toggle:
-    patch:
-      operationId: toggleSnapshotState
-      parameters:
-        - description: Use with JWT to specify the organization ID
-          explode: false
-          in: header
-          name: X-Daytona-Organization-ID
-          required: false
-          schema:
-            type: string
-          style: simple
-        - description: Snapshot ID
-          explode: false
-          in: path
-          name: id
-          required: true
-          schema:
-            type: string
-          style: simple
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ToggleState'
-        required: true
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SnapshotDto'
-          description: Snapshot state has been toggled
-      security:
-        - bearer: []
-        - oauth2:
-            - openid
-            - profile
-            - email
-      summary: Toggle snapshot state
-      tags:
-        - snapshots
   /snapshots/{id}/general:
     patch:
       operationId: setSnapshotGeneralStatus
@@ -4794,6 +4801,38 @@ paths:
             - profile
             - email
       summary: Activate a snapshot
+      tags:
+        - snapshots
+  /snapshots/{id}/deactivate:
+    post:
+      operationId: deactivateSnapshot
+      parameters:
+        - description: Use with JWT to specify the organization ID
+          explode: false
+          in: header
+          name: X-Daytona-Organization-ID
+          required: false
+          schema:
+            type: string
+          style: simple
+        - description: Snapshot ID
+          explode: false
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          style: simple
+      responses:
+        '204':
+          description: The snapshot has been successfully deactivated.
+      security:
+        - bearer: []
+        - oauth2:
+            - openid
+            - profile
+            - email
+      summary: Deactivate a snapshot
       tags:
         - snapshots
   /workspace:
@@ -5861,6 +5900,111 @@ paths:
       summary: Get temporary storage access for pushing objects
       tags:
         - object-storage
+  /audit:
+    get:
+      operationId: getAllAuditLogs
+      parameters:
+        - description: 'Number of items per page (default: 10)'
+          explode: true
+          in: query
+          name: limit
+          required: false
+          schema:
+            type: number
+          style: form
+        - description: 'Page number (default: 1)'
+          explode: true
+          in: query
+          name: page
+          required: false
+          schema:
+            type: number
+          style: form
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuditLogs'
+          description: Paginated list of all audit logs
+      security:
+        - bearer: []
+        - oauth2:
+            - openid
+            - profile
+            - email
+      summary: Get all audit logs
+      tags:
+        - audit
+    post:
+      operationId: createAuditLog
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAuditLog'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLog'
+          description: Audit log entry created successfully
+      security:
+        - bearer: []
+        - oauth2:
+            - openid
+            - profile
+            - email
+      summary: Create audit log entry
+      tags:
+        - audit
+  /audit/organizations/{organizationId}:
+    get:
+      operationId: getOrganizationAuditLogs
+      parameters:
+        - description: Organization ID
+          explode: false
+          in: path
+          name: organizationId
+          required: true
+          schema:
+            type: string
+          style: simple
+        - description: 'Number of items per page (default: 10)'
+          explode: true
+          in: query
+          name: limit
+          required: false
+          schema:
+            type: number
+          style: form
+        - description: 'Page number (default: 1)'
+          explode: true
+          in: query
+          name: page
+          required: false
+          schema:
+            type: number
+          style: form
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuditLogs'
+          description: Paginated list of organization audit logs
+      security:
+        - bearer: []
+        - oauth2:
+            - openid
+            - profile
+            - email
+      summary: Get audit logs for organization
+      tags:
+        - audit
 components:
   schemas:
     CreateApiKey:
@@ -5889,6 +6033,7 @@ components:
               - read:volumes
               - write:volumes
               - delete:volumes
+              - read:audit_logs
             type: string
           type: array
         expiresAt:
@@ -5938,6 +6083,7 @@ components:
               - read:volumes
               - write:volumes
               - delete:volumes
+              - read:audit_logs
             type: string
           type: array
         expiresAt:
@@ -5991,6 +6137,7 @@ components:
               - read:volumes
               - write:volumes
               - delete:volumes
+              - read:audit_logs
             type: string
           type: array
         lastUsedAt:
@@ -6047,6 +6194,7 @@ components:
               - read:volumes
               - write:volumes
               - delete:volumes
+              - read:audit_logs
             type: string
           type: array
         isGlobal:
@@ -6173,15 +6321,22 @@ components:
       type: object
     Organization:
       example:
-        createdAt: 2000-01-23T04:56:07.000+00:00
-        suspendedUntil: 2000-01-23T04:56:07.000+00:00
-        createdBy: createdBy
+        totalCpuQuota: 6.027456183070403
         suspensionReason: suspensionReason
         suspendedAt: 2000-01-23T04:56:07.000+00:00
-        name: name
         personal: true
-        id: id
+        suspensionCleanupGracePeriodHours: 0.8008281904610115
         suspended: true
+        createdAt: 2000-01-23T04:56:07.000+00:00
+        maxCpuPerSandbox: 5.637376656633329
+        suspendedUntil: 2000-01-23T04:56:07.000+00:00
+        maxDiskPerSandbox: 7.061401241503109
+        createdBy: createdBy
+        name: name
+        maxMemoryPerSandbox: 2.3021358869347655
+        id: id
+        totalMemoryQuota: 1.4658129805029452
+        totalDiskQuota: 5.962133916683182
         updatedAt: 2000-01-23T04:56:07.000+00:00
       properties:
         id:
@@ -6218,16 +6373,44 @@ components:
           description: Suspended until
           format: date-time
           type: string
+        suspensionCleanupGracePeriodHours:
+          description: Suspension cleanup grace period hours
+          type: number
+        totalCpuQuota:
+          description: Total CPU quota
+          type: number
+        totalMemoryQuota:
+          description: Total memory quota
+          type: number
+        totalDiskQuota:
+          description: Total disk quota
+          type: number
+        maxCpuPerSandbox:
+          description: Max CPU per sandbox
+          type: number
+        maxMemoryPerSandbox:
+          description: Max memory per sandbox
+          type: number
+        maxDiskPerSandbox:
+          description: Max disk per sandbox
+          type: number
       required:
         - createdAt
         - createdBy
         - id
+        - maxCpuPerSandbox
+        - maxDiskPerSandbox
+        - maxMemoryPerSandbox
         - name
         - personal
         - suspended
         - suspendedAt
         - suspendedUntil
+        - suspensionCleanupGracePeriodHours
         - suspensionReason
+        - totalCpuQuota
+        - totalDiskQuota
+        - totalMemoryQuota
         - updatedAt
       type: object
     UsageOverview:
@@ -6317,6 +6500,7 @@ components:
       example:
         reason: reason
         until: 2000-01-23T04:56:07.000+00:00
+        suspensionCleanupGracePeriodHours: 0.8008281904610115
       properties:
         reason:
           description: Suspension reason
@@ -6325,8 +6509,12 @@ components:
           description: Suspension until
           format: date-time
           type: string
+        suspensionCleanupGracePeriodHours:
+          description: Suspension cleanup grace period hours
+          type: number
       required:
         - reason
+        - suspensionCleanupGracePeriodHours
         - until
       type: object
     CreateOrganizationRole:
@@ -6358,6 +6546,7 @@ components:
               - read:volumes
               - write:volumes
               - delete:volumes
+              - read:audit_logs
             type: string
           type: array
       required:
@@ -6394,6 +6583,7 @@ components:
               - read:volumes
               - write:volumes
               - delete:volumes
+              - read:audit_logs
             type: string
           type: array
       required:
@@ -6580,6 +6770,7 @@ components:
       type: object
     User:
       example:
+        createdAt: 2000-01-23T04:56:07.000+00:00
         publicKeys:
           - name: name
             key: key
@@ -6603,7 +6794,12 @@ components:
           items:
             $ref: '#/components/schemas/UserPublicKey'
           type: array
+        createdAt:
+          description: Creation timestamp
+          format: date-time
+          type: string
       required:
+        - createdAt
         - email
         - id
         - name
@@ -6998,7 +7194,7 @@ components:
         autoStopInterval: 30
         labels:
           daytona.io/public: 'true'
-        target: us-west
+        target: us
         disk: 3
         autoDeleteInterval: 30
         public: false
@@ -7043,7 +7239,7 @@ components:
           type: string
         target:
           description: The target (region) where the sandbox will be created
-          example: us-west
+          example: us
           type: string
         cpu:
           description: CPU cores allocated to the sandbox
@@ -7126,29 +7322,33 @@ components:
       type: object
     CreateRunner:
       example:
-        disk: 1.4658129805029452
-        memory: 6.027456183070403
-        apiUrl: apiUrl
+        diskGiB: 1.4658129805029452
         apiKey: apiKey
-        domain: domain
+        proxyUrl: proxyUrl
         cpu: 0.8008281904610115
-        region: us-west
         gpu: 5.962133916683182
+        version: version
+        capacity: 5.637376656633329
+        apiUrl: apiUrl
+        memoryGiB: 6.027456183070403
+        domain: domain
+        region: us
         class: small
         gpuType: gpuType
-        capacity: 5.637376656633329
       properties:
         domain:
           type: string
         apiUrl:
           type: string
+        proxyUrl:
+          type: string
         apiKey:
           type: string
         cpu:
           type: number
-        memory:
+        memoryGiB:
           type: number
-        disk:
+        diskGiB:
           type: number
         gpu:
           type: number
@@ -7164,7 +7364,9 @@ components:
         capacity:
           type: number
         region:
-          example: us-west
+          example: us
+          type: string
+        version:
           type: string
       required:
         - apiKey
@@ -7172,12 +7374,14 @@ components:
         - capacity
         - class
         - cpu
-        - disk
+        - diskGiB
         - domain
         - gpu
         - gpuType
-        - memory
+        - memoryGiB
+        - proxyUrl
         - region
+        - version
       type: object
     SandboxClass:
       description: The class of the runner
@@ -7199,22 +7403,32 @@ components:
       example:
         memory: 16
         apiKey: api-key-123
-        cpu: 8
+        currentMemoryUsagePercentage: 68.2
+        availabilityScore: 85
         used: 2
-        gpu: 1
         capacity: 10
+        currentDiskUsagePercentage: 33.8
+        currentCpuUsagePercentage: 45.6
         createdAt: 2023-10-01T12:00:00Z
-        disk: 100
         apiUrl: https://api.runner1.example.com
-        domain: runner1.example.com
         id: runner123
         state: initializing
-        region: us-west
         unschedulable: false
         class: small
-        lastChecked: 2024-10-01T12:00:00Z
+        currentAllocatedDiskGiB: 50000
+        currentAllocatedMemoryGiB: 8000
         gpuType: gpuType
+        currentAllocatedCpu: 4000
         updatedAt: 2023-10-01T12:00:00Z
+        proxyUrl: https://proxy.runner1.example.com
+        cpu: 8
+        gpu: 1
+        currentSnapshotCount: 12
+        version: '0'
+        disk: 100
+        domain: runner1.example.com
+        region: us
+        lastChecked: 2024-10-01T12:00:00Z
       properties:
         id:
           description: The ID of the runner
@@ -7228,6 +7442,10 @@ components:
           description: The API URL of the runner
           example: https://api.runner1.example.com
           type: string
+        proxyUrl:
+          description: The proxy URL of the runner
+          example: https://proxy.runner1.example.com
+          type: string
         apiKey:
           description: The API key for the runner
           example: api-key-123
@@ -7237,11 +7455,11 @@ components:
           example: 8
           type: number
         memory:
-          description: The memory capacity of the runner in GB
+          description: The memory capacity of the runner in GiB
           example: 16
           type: number
         disk:
-          description: The disk capacity of the runner in GB
+          description: The disk capacity of the runner in GiB
           example: 100
           type: number
         gpu:
@@ -7264,9 +7482,41 @@ components:
           description: The capacity of the runner
           example: 10
           type: number
+        currentCpuUsagePercentage:
+          description: Current CPU usage percentage
+          example: 45.6
+          type: number
+        currentMemoryUsagePercentage:
+          description: Current RAM usage percentage
+          example: 68.2
+          type: number
+        currentDiskUsagePercentage:
+          description: Current disk usage percentage
+          example: 33.8
+          type: number
+        currentAllocatedCpu:
+          description: Current allocated CPU
+          example: 4000
+          type: number
+        currentAllocatedMemoryGiB:
+          description: Current allocated memory in GiB
+          example: 8000
+          type: number
+        currentAllocatedDiskGiB:
+          description: Current allocated disk in GiB
+          example: 50000
+          type: number
+        currentSnapshotCount:
+          description: Current snapshot count
+          example: 12
+          type: number
+        availabilityScore:
+          description: Runner availability score
+          example: 85
+          type: number
         region:
           description: The region of the runner
-          example: us-west
+          example: us
           type: string
         state:
           allOf:
@@ -7289,6 +7539,10 @@ components:
           description: The last update timestamp of the runner
           example: 2023-10-01T12:00:00Z
           type: string
+        version:
+          description: The version of the runner
+          example: '0'
+          type: string
       required:
         - apiKey
         - apiUrl
@@ -7302,11 +7556,13 @@ components:
         - gpuType
         - id
         - memory
+        - proxyUrl
         - region
         - state
         - unschedulable
         - updatedAt
         - used
+        - version
       type: object
     RunnerSnapshotDto:
       example:
@@ -8640,7 +8896,6 @@ components:
         buildInfo: ''
         cpu: 6.027456183070403
         gpu: 1.4658129805029452
-        enabled: true
         organizationId: organizationId
         general: true
         createdAt: 2000-01-23T04:56:07.000+00:00
@@ -8667,8 +8922,6 @@ components:
           type: string
         imageName:
           type: string
-        enabled:
-          type: boolean
         state:
           allOf:
             - $ref: '#/components/schemas/SnapshotState'
@@ -8709,7 +8962,6 @@ components:
         - cpu
         - createdAt
         - disk
-        - enabled
         - entrypoint
         - errorReason
         - general
@@ -8722,17 +8974,6 @@ components:
         - state
         - updatedAt
       type: object
-    ToggleState:
-      example:
-        enabled: true
-      properties:
-        enabled:
-          description: Enable or disable the snapshot/tag
-          example: true
-          type: boolean
-      required:
-        - enabled
-      type: object
     PaginatedSnapshotsDto:
       example:
         total: 2.3021358869347655
@@ -8743,7 +8984,6 @@ components:
             buildInfo: ''
             cpu: 6.027456183070403
             gpu: 1.4658129805029452
-            enabled: true
             organizationId: organizationId
             general: true
             createdAt: 2000-01-23T04:56:07.000+00:00
@@ -8763,7 +9003,6 @@ components:
             buildInfo: ''
             cpu: 6.027456183070403
             gpu: 1.4658129805029452
-            enabled: true
             organizationId: organizationId
             general: true
             createdAt: 2000-01-23T04:56:07.000+00:00
@@ -9216,9 +9455,9 @@ components:
       type: object
     CreateDockerRegistry:
       example:
-        registryType: internal
+        registryType: organization
         password: password
-        isDefault: false
+        isDefault: true
         name: name
         project: project
         url: url
@@ -9240,7 +9479,7 @@ components:
           description: Registry project
           type: string
         registryType:
-          default: internal
+          default: organization
           description: Registry type
           enum:
             - internal
@@ -9249,14 +9488,11 @@ components:
             - transient
           type: string
         isDefault:
-          default: false
           description: Set as default registry
           type: boolean
       required:
-        - isDefault
         - name
         - password
-        - project
         - registryType
         - url
         - username
@@ -9366,10 +9602,15 @@ components:
       example:
         password: password
         name: name
+        project: project
+        url: url
         username: username
       properties:
         name:
           description: Registry name
+          type: string
+        url:
+          description: Registry URL
           type: string
         username:
           description: Registry username
@@ -9377,8 +9618,12 @@ components:
         password:
           description: Registry password
           type: string
+        project:
+          description: Registry project
+          type: string
       required:
         - name
+        - url
         - username
       type: object
     StorageAccessDto:
@@ -9421,6 +9666,207 @@ components:
         - secret
         - sessionToken
         - storageUrl
+      type: object
+    AuditLog:
+      example:
+        metadata:
+          key: ''
+        targetId: targetId
+        errorMessage: errorMessage
+        ipAddress: ipAddress
+        actorEmail: actorEmail
+        targetType: targetType
+        userAgent: userAgent
+        source: source
+        organizationId: organizationId
+        createdAt: 2000-01-23T04:56:07.000+00:00
+        actorId: actorId
+        action: action
+        id: id
+        statusCode: 0.8008281904610115
+      properties:
+        id:
+          type: string
+        actorId:
+          type: string
+        actorEmail:
+          type: string
+        organizationId:
+          type: string
+        action:
+          type: string
+        targetType:
+          type: string
+        targetId:
+          type: string
+        statusCode:
+          type: number
+        errorMessage:
+          type: string
+        ipAddress:
+          type: string
+        userAgent:
+          type: string
+        source:
+          type: string
+        metadata:
+          additionalProperties: true
+          type: object
+        createdAt:
+          format: date-time
+          type: string
+      required:
+        - action
+        - actorEmail
+        - actorId
+        - createdAt
+        - id
+      type: object
+    PaginatedAuditLogs:
+      example:
+        total: 6.027456183070403
+        totalPages: 5.962133916683182
+        page: 1.4658129805029452
+        items:
+          - metadata:
+              key: ''
+            targetId: targetId
+            errorMessage: errorMessage
+            ipAddress: ipAddress
+            actorEmail: actorEmail
+            targetType: targetType
+            userAgent: userAgent
+            source: source
+            organizationId: organizationId
+            createdAt: 2000-01-23T04:56:07.000+00:00
+            actorId: actorId
+            action: action
+            id: id
+            statusCode: 0.8008281904610115
+          - metadata:
+              key: ''
+            targetId: targetId
+            errorMessage: errorMessage
+            ipAddress: ipAddress
+            actorEmail: actorEmail
+            targetType: targetType
+            userAgent: userAgent
+            source: source
+            organizationId: organizationId
+            createdAt: 2000-01-23T04:56:07.000+00:00
+            actorId: actorId
+            action: action
+            id: id
+            statusCode: 0.8008281904610115
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/AuditLog'
+          type: array
+        total:
+          type: number
+        page:
+          type: number
+        totalPages:
+          type: number
+      required:
+        - items
+        - page
+        - total
+        - totalPages
+      type: object
+    CreateAuditLog:
+      example:
+        organizationId: organizationId
+        actorId: actorId
+        targetId: targetId
+        actorEmail: actorEmail
+        action: create
+        targetType: api_key
+      properties:
+        actorId:
+          type: string
+        actorEmail:
+          type: string
+        organizationId:
+          type: string
+        action:
+          enum:
+            - create
+            - read
+            - update
+            - delete
+            - login
+            - set_default
+            - update_role
+            - update_assigned_roles
+            - update_quota
+            - suspend
+            - unsuspend
+            - accept
+            - decline
+            - link_account
+            - unlink_account
+            - leave_organization
+            - regenerate_key_pair
+            - update_scheduling
+            - start
+            - stop
+            - replace_labels
+            - create_backup
+            - update_public_status
+            - set_auto_stop_interval
+            - set_auto_archive_interval
+            - set_auto_delete_interval
+            - archive
+            - get_port_preview_url
+            - set_general_status
+            - activate
+            - deactivate
+            - toolbox_delete_file
+            - toolbox_download_file
+            - toolbox_create_folder
+            - toolbox_move_file
+            - toolbox_set_file_permissions
+            - toolbox_replace_in_files
+            - toolbox_upload_file
+            - toolbox_bulk_upload_files
+            - toolbox_git_add_files
+            - toolbox_git_create_branch
+            - toolbox_git_delete_branch
+            - toolbox_git_clone_repository
+            - toolbox_git_commit_changes
+            - toolbox_git_pull_changes
+            - toolbox_git_push_changes
+            - toolbox_git_checkout_branch
+            - toolbox_execute_command
+            - toolbox_create_session
+            - toolbox_session_execute_command
+            - toolbox_delete_session
+            - toolbox_computer_use_start
+            - toolbox_computer_use_stop
+            - toolbox_computer_use_restart_process
+          type: string
+        targetType:
+          enum:
+            - api_key
+            - organization
+            - organization_invitation
+            - organization_role
+            - organization_user
+            - docker_registry
+            - runner
+            - sandbox
+            - snapshot
+            - user
+            - volume
+          type: string
+        targetId:
+          type: string
+      required:
+        - action
+        - actorEmail
+        - actorId
       type: object
     uploadFile_request:
       properties:

@@ -29,6 +29,7 @@ import { SandboxState } from '../enums/sandbox-state.enum'
 import { OrganizationEvents } from '../../organization/constants/organization-events.constant'
 import { OrganizationSuspendedSnapshotDeactivatedEvent } from '../../organization/events/organization-suspended-snapshot-deactivated.event'
 import { SnapshotRunnerState } from '../enums/snapshot-runner-state.enum'
+import { PaginatedList } from '../../common/interfaces/paginated-list.interface'
 
 const IMAGE_NAME_REGEX = /^[a-zA-Z0-9_.\-:]+(\/[a-zA-Z0-9_.\-:]+)*$/
 @Injectable()
@@ -145,19 +146,6 @@ export class SnapshotService {
     }
   }
 
-  async toggleSnapshotState(snapshotId: string, enabled: boolean) {
-    const snapshot = await this.snapshotRepository.findOne({
-      where: { id: snapshotId },
-    })
-
-    if (!snapshot) {
-      throw new NotFoundException(`Snapshot ${snapshotId} not found`)
-    }
-
-    snapshot.enabled = enabled
-    return await this.snapshotRepository.save(snapshot)
-  }
-
   async removeSnapshot(snapshotId: string) {
     const snapshot = await this.snapshotRepository.findOne({
       where: { id: snapshotId },
@@ -173,7 +161,7 @@ export class SnapshotService {
     await this.snapshotRepository.save(snapshot)
   }
 
-  async getAllSnapshots(organizationId: string, page = 1, limit = 10) {
+  async getAllSnapshots(organizationId: string, page = 1, limit = 10): Promise<PaginatedList<Snapshot>> {
     const pageNum = Number(page)
     const limitNum = Number(limit)
 
@@ -350,13 +338,16 @@ export class SnapshotService {
     snapshot.state = SnapshotState.INACTIVE
     await this.snapshotRepository.save(snapshot)
 
-    // Set associated SnapshotRunner records to REMOVING state
-    const result = await this.snapshotRunnerRepository.update(
-      { snapshotRef: snapshot.internalName },
-      { state: SnapshotRunnerState.REMOVING },
-    )
-
-    this.logger.debug(`Deactivated snapshot ${snapshot.id} and marked ${result.affected} SnapshotRunners for removal`)
+    try {
+      // Set associated SnapshotRunner records to REMOVING state
+      const result = await this.snapshotRunnerRepository.update(
+        { snapshotRef: snapshot.internalName },
+        { state: SnapshotRunnerState.REMOVING },
+      )
+      this.logger.debug(`Deactivated snapshot ${snapshot.id} and marked ${result.affected} SnapshotRunners for removal`)
+    } catch (error) {
+      this.logger.error(`Deactivated snapshot ${snapshot.id}, but failed to mark snapshot runners for removal`, error)
+    }
   }
 
   @OnEvent(OrganizationEvents.SUSPENDED_SNAPSHOT_DEACTIVATED)

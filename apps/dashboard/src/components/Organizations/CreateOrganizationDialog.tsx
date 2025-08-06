@@ -41,8 +41,11 @@ export const CreateOrganizationDialog: React.FC<CreateOrganizationDialogProps> =
     setLoading(true)
     const org = await onCreateOrganization(name)
     if (org) {
-      setCreatedOrg(org)
-      setName('')
+      // TODO: Return when we fix the selected org states
+      // setCreatedOrg(org)
+      // setName('')
+    } else {
+      setLoading(false)
     }
     setLoading(false)
   }
@@ -100,13 +103,13 @@ export const CreateOrganizationDialog: React.FC<CreateOrganizationDialogProps> =
                   <>
                     To get started, add a payment method on the{' '}
                     <Link
-                      to={RoutePath.BILLING}
+                      to={RoutePath.BILLING_WALLET}
                       className="text-blue-500 hover:underline"
                       onClick={(e) => {
                         onOpenChange(false)
                       }}
                     >
-                      billing page
+                      wallet page
                     </Link>
                     .
                   </>

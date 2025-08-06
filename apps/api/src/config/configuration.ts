@@ -75,6 +75,15 @@ const configuration = {
     protocol: process.env.PROXY_PROTOCOL,
     apiKey: process.env.PROXY_API_KEY,
   },
+  audit: {
+    toolboxRequestsEnabled: process.env.AUDIT_TOOLBOX_REQUESTS_ENABLED === 'true',
+    retentionDays: process.env.AUDIT_LOG_RETENTION_DAYS
+      ? parseInt(process.env.AUDIT_LOG_RETENTION_DAYS, 10)
+      : undefined,
+    consoleLogEnabled: process.env.AUDIT_CONSOLE_LOG_ENABLED === 'true',
+  },
+  cronTimeZone: process.env.CRON_TIMEZONE,
+  maxConcurrentArchivesPerRunner: parseInt(process.env.MAX_CONCURRENT_ARCHIVES_PER_RUNNER || '6', 10),
 }
 
 export { configuration }
