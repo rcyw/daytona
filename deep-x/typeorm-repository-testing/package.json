@@ -1,0 +1,90 @@
+{
+  "name": "typeorm-repository-testing",
+  "version": "1.0.0",
+  "description": "TypeORM Repository testing project based on Daytona API entities",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:organization": "jest --testPathPattern=organization",
+    "test:repository-patterns": "jest --testPathPattern=repository-patterns",
+    "test:performance": "jest --testPathPattern=performance",
+    "setup-db": "ts-node scripts/setup-db.ts",
+    "clean-db": "ts-node scripts/clean-db.ts",
+    "demo": "ts-node scripts/interactive-demo.ts",
+    "example:basic": "ts-node examples/basic-queries.ts",
+    "example:complex": "ts-node examples/complex-queries.ts",
+    "example:relationships": "ts-node examples/relationships.ts",
+    "example:transactions": "ts-node examples/transactions.ts",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "format": "prettier --write src/**/*.ts"
+  },
+  "keywords": [
+    "typeorm",
+    "repository",
+    "testing",
+    "postgresql",
+    "daytona",
+    "entities"
+  ],
+  "author": "Daytona Team",
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "cli-table3": "^0.6.3",
+    "dotenv": "^16.3.1",
+    "inquirer": "^8.2.6",
+    "ora": "^5.4.1",
+    "pg": "^8.11.3",
+    "pg-query-stream": "^4.10.3",
+    "reflect-metadata": "^0.1.13",
+    "tsconfig-paths": "^4.2.0",
+    "typeorm": "^0.3.20",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^8.2.10",
+    "@types/jest": "^29.5.8",
+    "@types/node": "^20.10.0",
+    "@types/pg": "^8.10.9",
+    "@types/uuid": "^9.0.7",
+    "@typescript-eslint/eslint-plugin": "^6.12.0",
+    "@typescript-eslint/parser": "^6.12.0",
+    "eslint": "^8.54.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.1.0",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.3.2"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/src"
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.ts",
+      "**/?(*.)+(spec|test).ts"
+    ],
+    "transform": {
+      "^.+\\.ts$": "ts-jest"
+    },
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/**/*.d.ts",
+      "!src/tests/setup.ts"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/src/tests/setup.ts"
+    ],
+    "testTimeout": 30000
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
