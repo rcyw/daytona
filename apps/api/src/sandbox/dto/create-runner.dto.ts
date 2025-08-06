@@ -19,6 +19,10 @@ export class CreateRunnerDto {
 
   @IsString()
   @ApiProperty()
+  proxyUrl: string
+
+  @IsString()
+  @ApiProperty()
   apiKey: string
 
   @IsNumber()
@@ -27,11 +31,11 @@ export class CreateRunnerDto {
 
   @IsNumber()
   @ApiProperty()
-  memory: number
+  memoryGiB: number
 
   @IsNumber()
   @ApiProperty()
-  disk: number
+  diskGiB: number
 
   @IsNumber()
   @ApiProperty()
@@ -57,4 +61,8 @@ export class CreateRunnerDto {
     example: 'us',
   })
   region: string
+
+  @IsString()
+  @ApiProperty()
+  version: string
 }

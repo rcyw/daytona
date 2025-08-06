@@ -3,12 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ObjectStorageApi, SnapshotDto, SnapshotsApi, SnapshotState, CreateSnapshot } from '@daytonaio/api-client'
+import {
+  ObjectStorageApi,
+  SnapshotDto,
+  SnapshotsApi,
+  SnapshotState,
+  CreateSnapshot,
+  Configuration,
+} from '@daytonaio/api-client'
 import { DaytonaError } from './errors/DaytonaError'
-import { ObjectStorage } from './ObjectStorage'
 import { Image } from './Image'
 import { Resources } from './Daytona'
 import { processStreamingResponse } from './utils/Stream'
+import { dynamicImport } from './utils/Import'
 
 const SNAPSHOTS_FETCH_LIMIT = 200
 
@@ -20,7 +27,6 @@ const SNAPSHOTS_FETCH_LIMIT = 200
  * @property {boolean} general - Whether the Snapshot is general.
  * @property {string} name - Name of the Snapshot.
  * @property {string} imageName - Name of the Image of the Snapshot.
- * @property {boolean} enabled - Whether the Snapshot is enabled.
  * @property {SnapshotState} state - Current state of the Snapshot.
  * @property {number} size - Size of the Snapshot.
  * @property {string[]} entrypoint - Entrypoint of the Snapshot.
@@ -58,6 +64,7 @@ export type CreateSnapshotParams = {
  */
 export class SnapshotService {
   constructor(
+    private clientConfig: Configuration,
     private snapshotsApi: SnapshotsApi,
     private objectStorageApi: ObjectStorageApi,
   ) {}
@@ -177,8 +184,10 @@ export class SnapshotService {
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     const startLogStreaming = async (onChunk: (chunk: string) => void = () => {}) => {
       if (!streamPromise) {
+        const url = `${this.clientConfig.basePath}/snapshots/${createdSnapshot.id}/build-logs?follow=true`
+
         streamPromise = processStreamingResponse(
-          () => this.snapshotsApi.getSnapshotBuildLogs(createdSnapshot.id, undefined, true, { responseType: 'stream' }),
+          () => fetch(url, { method: 'GET', headers: this.clientConfig.baseOptions.headers }),
           (chunk) => onChunk(chunk.trimEnd()),
           async () => logTerminalStates.includes(snapshotRef.createdSnapshot.state),
         )
@@ -246,8 +255,9 @@ export class SnapshotService {
       return []
     }
 
+    const ObjectStorageModule = await dynamicImport('ObjectStorage', '"processImageContext" is not supported: ')
     const pushAccessCreds = (await objectStorageApi.getPushAccess()).data
-    const objectStorage = new ObjectStorage({
+    const objectStorage = new ObjectStorageModule.ObjectStorage({
       endpointUrl: pushAccessCreds.storageUrl,
       accessKeyId: pushAccessCreds.accessKey,
       secretAccessKey: pushAccessCreds.secret,

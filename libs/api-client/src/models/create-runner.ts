@@ -35,6 +35,12 @@ export interface CreateRunner {
    * @type {string}
    * @memberof CreateRunner
    */
+  proxyUrl: string
+  /**
+   *
+   * @type {string}
+   * @memberof CreateRunner
+   */
   apiKey: string
   /**
    *
@@ -47,13 +53,13 @@ export interface CreateRunner {
    * @type {number}
    * @memberof CreateRunner
    */
-  memory: number
+  memoryGiB: number
   /**
    *
    * @type {number}
    * @memberof CreateRunner
    */
-  disk: number
+  diskGiB: number
   /**
    *
    * @type {number}
@@ -84,6 +90,12 @@ export interface CreateRunner {
    * @memberof CreateRunner
    */
   region: string
+  /**
+   *
+   * @type {string}
+   * @memberof CreateRunner
+   */
+  version: string
 }
 
 export const CreateRunnerClassEnum = {

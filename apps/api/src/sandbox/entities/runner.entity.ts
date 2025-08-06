@@ -19,16 +19,19 @@ export class Runner {
   apiUrl: string
 
   @Column()
+  proxyUrl: string
+
+  @Column()
   apiKey: string
 
   @Column()
   cpu: number
 
   @Column()
-  memory: number
+  memoryGiB: number
 
   @Column()
-  disk: number
+  diskGiB: number
 
   @Column()
   gpu: number
@@ -51,6 +54,49 @@ export class Runner {
   @Column()
   capacity: number
 
+  @Column({
+    type: 'float',
+    default: 0,
+  })
+  currentCpuUsagePercentage: number
+
+  @Column({
+    type: 'float',
+    default: 0,
+  })
+  currentMemoryUsagePercentage: number
+
+  @Column({
+    type: 'float',
+    default: 0,
+  })
+  currentDiskUsagePercentage: number
+
+  @Column({
+    default: 0,
+  })
+  currentAllocatedCpu: number
+
+  @Column({
+    default: 0,
+  })
+  currentAllocatedMemoryGiB: number
+
+  @Column({
+    default: 0,
+  })
+  currentAllocatedDiskGiB: number
+
+  @Column({
+    default: 0,
+  })
+  currentSnapshotCount: number
+
+  @Column({
+    default: 0,
+  })
+  availabilityScore: number
+
   @Column()
   region: string
 
@@ -60,6 +106,11 @@ export class Runner {
     default: RunnerState.INITIALIZING,
   })
   state: RunnerState
+
+  @Column({
+    default: '0',
+  })
+  version: string
 
   @Column({
     nullable: true,

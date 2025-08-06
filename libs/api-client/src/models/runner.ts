@@ -44,6 +44,12 @@ export interface Runner {
    */
   apiUrl: string
   /**
+   * The proxy URL of the runner
+   * @type {string}
+   * @memberof Runner
+   */
+  proxyUrl: string
+  /**
    * The API key for the runner
    * @type {string}
    * @memberof Runner
@@ -56,13 +62,13 @@ export interface Runner {
    */
   cpu: number
   /**
-   * The memory capacity of the runner in GB
+   * The memory capacity of the runner in GiB
    * @type {number}
    * @memberof Runner
    */
   memory: number
   /**
-   * The disk capacity of the runner in GB
+   * The disk capacity of the runner in GiB
    * @type {number}
    * @memberof Runner
    */
@@ -97,6 +103,54 @@ export interface Runner {
    * @memberof Runner
    */
   capacity: number
+  /**
+   * Current CPU usage percentage
+   * @type {number}
+   * @memberof Runner
+   */
+  currentCpuUsagePercentage?: number
+  /**
+   * Current RAM usage percentage
+   * @type {number}
+   * @memberof Runner
+   */
+  currentMemoryUsagePercentage?: number
+  /**
+   * Current disk usage percentage
+   * @type {number}
+   * @memberof Runner
+   */
+  currentDiskUsagePercentage?: number
+  /**
+   * Current allocated CPU
+   * @type {number}
+   * @memberof Runner
+   */
+  currentAllocatedCpu?: number
+  /**
+   * Current allocated memory in GiB
+   * @type {number}
+   * @memberof Runner
+   */
+  currentAllocatedMemoryGiB?: number
+  /**
+   * Current allocated disk in GiB
+   * @type {number}
+   * @memberof Runner
+   */
+  currentAllocatedDiskGiB?: number
+  /**
+   * Current snapshot count
+   * @type {number}
+   * @memberof Runner
+   */
+  currentSnapshotCount?: number
+  /**
+   * Runner availability score
+   * @type {number}
+   * @memberof Runner
+   */
+  availabilityScore?: number
   /**
    * The region of the runner
    * @type {string}
@@ -133,4 +187,10 @@ export interface Runner {
    * @memberof Runner
    */
   updatedAt: string
+  /**
+   * The version of the runner
+   * @type {string}
+   * @memberof Runner
+   */
+  version: string
 }

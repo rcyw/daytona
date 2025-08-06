@@ -18,18 +18,32 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool
-from typing import Any, ClassVar, Dict, List
+from datetime import datetime
+from pydantic import BaseModel, ConfigDict, Field, StrictFloat, StrictInt, StrictStr
+from typing import Any, ClassVar, Dict, List, Optional, Union
 from typing import Optional, Set
 from typing_extensions import Self
 
-class ToggleState(BaseModel):
+class AuditLog(BaseModel):
     """
-    ToggleState
+    AuditLog
     """ # noqa: E501
-    enabled: StrictBool = Field(description="Enable or disable the snapshot/tag")
+    id: StrictStr
+    actor_id: StrictStr = Field(alias="actorId")
+    actor_email: StrictStr = Field(alias="actorEmail")
+    organization_id: Optional[StrictStr] = Field(default=None, alias="organizationId")
+    action: StrictStr
+    target_type: Optional[StrictStr] = Field(default=None, alias="targetType")
+    target_id: Optional[StrictStr] = Field(default=None, alias="targetId")
+    status_code: Optional[Union[StrictFloat, StrictInt]] = Field(default=None, alias="statusCode")
+    error_message: Optional[StrictStr] = Field(default=None, alias="errorMessage")
+    ip_address: Optional[StrictStr] = Field(default=None, alias="ipAddress")
+    user_agent: Optional[StrictStr] = Field(default=None, alias="userAgent")
+    source: Optional[StrictStr] = None
+    metadata: Optional[Dict[str, Any]] = None
+    created_at: datetime = Field(alias="createdAt")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["enabled"]
+    __properties: ClassVar[List[str]] = ["id", "actorId", "actorEmail", "organizationId", "action", "targetType", "targetId", "statusCode", "errorMessage", "ipAddress", "userAgent", "source", "metadata", "createdAt"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -49,7 +63,7 @@ class ToggleState(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of ToggleState from a JSON string"""
+        """Create an instance of AuditLog from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -81,7 +95,7 @@ class ToggleState(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of ToggleState from a dict"""
+        """Create an instance of AuditLog from a dict"""
         if obj is None:
             return None
 
@@ -89,7 +103,20 @@ class ToggleState(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "enabled": obj.get("enabled")
+            "id": obj.get("id"),
+            "actorId": obj.get("actorId"),
+            "actorEmail": obj.get("actorEmail"),
+            "organizationId": obj.get("organizationId"),
+            "action": obj.get("action"),
+            "targetType": obj.get("targetType"),
+            "targetId": obj.get("targetId"),
+            "statusCode": obj.get("statusCode"),
+            "errorMessage": obj.get("errorMessage"),
+            "ipAddress": obj.get("ipAddress"),
+            "userAgent": obj.get("userAgent"),
+            "source": obj.get("source"),
+            "metadata": obj.get("metadata"),
+            "createdAt": obj.get("createdAt")
         })
         # store additional fields in additional_properties
         for _key in obj.keys():
